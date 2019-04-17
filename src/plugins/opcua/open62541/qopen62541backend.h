@@ -53,6 +53,7 @@ public:
 
 public Q_SLOTS:
     void connectToEndpoint(const QUrl &url);
+    void connectToEndpointEncrypted(const QUrl &url, const QSslCertificate &pubKey, const QSslKey &priKey);
     void disconnectFromEndpoint();
     void requestEndpoints(const QUrl &url);
 

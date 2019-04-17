@@ -45,6 +45,10 @@
 #include <QtCore/qurl.h>
 #include <QtCore/quuid.h>
 
+#include <QSslCertificate>
+#include <QSslCertificateExtension>
+#include <QSslKey>
+
 QT_BEGIN_NAMESPACE
 
 Q_DECLARE_LOGGING_CATEGORY(QT_OPCUA_PLUGINS_OPEN62541)
@@ -391,7 +395,8 @@ void Open62541AsyncBackend::resolveBrowsePath(quint64 handle, UA_NodeId startNod
 
 void Open62541AsyncBackend::findServers(const QUrl &url, const QStringList &localeIds, const QStringList &serverUris)
 {
-    UA_Client *tmpClient = UA_Client_new(UA_ClientConfig_default);
+    UA_Client *tmpClient = UA_Client_new();
+
     UaDeleter<UA_Client> clientDeleter(tmpClient, UA_Client_delete);
 
     UA_String *uaServerUris = nullptr;
@@ -771,10 +776,10 @@ void Open62541AsyncBackend::connectToEndpoint(const QUrl &url)
 
     m_useStateCallback = false;
 
-    UA_ClientConfig conf = UA_ClientConfig_default;
-    conf.clientContext = this;
-    conf.stateCallback = &clientStateCallback;
-    m_uaclient = UA_Client_new(conf);
+    m_uaclient = UA_Client_new();
+    UA_ClientConfig *conf = UA_Client_getConfig(m_uaclient);
+    conf->clientContext = this;
+    conf->stateCallback = &clientStateCallback;
     UA_StatusCode ret;
 
     if (url.userName().length())
@@ -795,6 +800,79 @@ void Open62541AsyncBackend::connectToEndpoint(const QUrl &url)
 
     m_useStateCallback = true;
     emit stateAndOrErrorChanged(QOpcUaClient::Connected, QOpcUaClient::NoError);
+}
+
+void Open62541AsyncBackend::connectToEndpointEncrypted(const QUrl &url, const QSslCertificate &pubKey, const QSslKey &priKey)
+{
+    cleanupSubscriptions();
+
+    if (m_uaclient)
+        UA_Client_delete(m_uaclient);
+
+    m_useStateCallback = false;
+
+    m_uaclient = UA_Client_new();
+    UA_ClientConfig *conf = UA_Client_getConfig(m_uaclient);
+    conf->clientContext = this;
+    conf->stateCallback = &clientStateCallback;
+    UA_StatusCode ret;
+
+    if (!pubKey.isNull() && !priKey.isNull()) {
+        UA_ByteString *revocationList = NULL;
+        size_t revocationListSize = 0;
+        UA_ByteString *trustList = NULL;
+        size_t trustListSize = 0;
+
+        UA_ByteString certificate;
+        QByteArray pubKeyDer = pubKey.toDer();
+        certificate.length = (size_t)pubKeyDer.length();
+        certificate.data = (UA_Byte *)UA_malloc((size_t)pubKeyDer.length() * sizeof(UA_Byte));
+        memcpy(certificate.data, pubKeyDer.constData(), certificate.length);
+
+        UA_ByteString privateKey;
+        QByteArray privKeyDer = priKey.toDer();
+        privateKey.length = (size_t)privKeyDer.length();
+        privateKey.data = (UA_Byte *)UA_malloc((size_t)privKeyDer.length() * sizeof(UA_Byte));
+        memcpy(privateKey.data, privKeyDer.constData(), privateKey.length);
+
+        UA_ClientConfig_setDefaultEncryption(conf, certificate, privateKey,
+                                             trustList, trustListSize,
+                                             revocationList, revocationListSize);
+
+        UA_ByteString_clear(&certificate);
+        UA_ByteString_clear(&privateKey);
+
+        QString applicationURI;
+        for (const QSslCertificateExtension &e : pubKey.extensions()) {
+            if (e.name() == "subjectAltName") {
+                applicationURI = e.value().toMap()["URI"].toString();
+            }
+        }
+
+        /* Secure client connect */
+        conf->clientDescription.applicationUri = UA_STRING_ALLOC(qUtf8Printable(applicationURI));
+        conf->securityMode = UA_MESSAGESECURITYMODE_SIGNANDENCRYPT;
+    }
+
+    if (url.userName().length())
+        ret = UA_Client_connect_username(m_uaclient, url.toString(QUrl::RemoveUserInfo).toUtf8().constData(),
+                                         url.userName().toUtf8().constData(), url.password().toUtf8().constData());
+    else
+        ret = UA_Client_connect(m_uaclient, url.toString().toUtf8().constData());
+
+    if (ret != UA_STATUSCODE_GOOD) {
+        UA_Client_delete(m_uaclient);
+        m_uaclient = nullptr;
+        QOpcUaClient::ClientError error = ret == UA_STATUSCODE_BADUSERACCESSDENIED ? QOpcUaClient::AccessDenied : QOpcUaClient::UnknownError;
+
+        emit stateAndOrErrorChanged(QOpcUaClient::Disconnected, error);
+        qCWarning(QT_OPCUA_PLUGINS_OPEN62541) << "Open62541: Failed to connect";
+        return;
+    }
+
+    m_useStateCallback = true;
+    emit stateAndOrErrorChanged(QOpcUaClient::Connected, QOpcUaClient::NoError);
+
 }
 
 void Open62541AsyncBackend::disconnectFromEndpoint()
@@ -819,7 +897,7 @@ void Open62541AsyncBackend::disconnectFromEndpoint()
 
 void Open62541AsyncBackend::requestEndpoints(const QUrl &url)
 {
-    UA_Client *tmpClient = UA_Client_new(UA_ClientConfig_default);
+    UA_Client *tmpClient = UA_Client_new();
     size_t numEndpoints = 0;
     UA_EndpointDescription *endpoints = nullptr;
     UA_StatusCode res = UA_Client_getEndpoints(tmpClient, url.toString(QUrl::RemoveUserInfo).toUtf8().constData(), &numEndpoints, &endpoints);

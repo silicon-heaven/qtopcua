@@ -29,6 +29,8 @@ SOURCES += \
 
 OTHER_FILES = open62541-metadata.json
 
+LIBS += -lmbedtls -lmbedcrypto -lmbedx509
+
 PLUGIN_TYPE = opcua
 PLUGIN_CLASS_NAME = QOpen62541Plugin
 load(qt_plugin)

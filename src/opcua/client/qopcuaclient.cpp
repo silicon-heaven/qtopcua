@@ -285,6 +285,12 @@ void QOpcUaClient::connectToEndpoint(const QUrl &url)
     d->connectToEndpoint(url);
 }
 
+void QOpcUaClient::connectToEndpointEncypted(const QUrl &url, const QSslCertificate &pubKey, const QSslKey &priKey)
+{
+    Q_D(QOpcUaClient);
+    d->connectToEndpointEncrypted(url, pubKey, priKey);
+}
+
 /*!
     Disconnects from the server.
     \sa connectToEndpoint()

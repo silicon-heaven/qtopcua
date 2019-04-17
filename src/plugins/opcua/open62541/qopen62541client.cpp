@@ -46,6 +46,8 @@
 #include <QtCore/qstringlist.h>
 #include <QtCore/qthread.h>
 #include <QtCore/qurl.h>
+#include <QtNetwork/QSslCertificate>
+#include <QtNetwork/QSslKey>
 
 QT_BEGIN_NAMESPACE
 
@@ -72,6 +74,14 @@ QOpen62541Client::~QOpen62541Client()
 void QOpen62541Client::connectToEndpoint(const QUrl &url)
 {
     QMetaObject::invokeMethod(m_backend, "connectToEndpoint", Qt::QueuedConnection, Q_ARG(QUrl, url));
+}
+
+void QOpen62541Client::connectToEndpointEncrypted(const QUrl &url, const QSslCertificate &pubKey, const QSslKey &priKey)
+{
+    qRegisterMetaType<QSslCertificate>("QSslCertificate");
+    qRegisterMetaType<QSslKey>("QSslKey");
+    QMetaObject::invokeMethod(m_backend, "connectToEndpointEncrypted", Qt::QueuedConnection, Q_ARG(QUrl, url),
+                              Q_ARG(QSslCertificate, pubKey), Q_ARG(QSslKey, priKey));
 }
 
 void QOpen62541Client::disconnectFromEndpoint()

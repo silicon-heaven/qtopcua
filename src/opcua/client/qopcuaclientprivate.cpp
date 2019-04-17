@@ -120,6 +120,17 @@ void QOpcUaClientPrivate::connectToEndpoint(const QUrl &url)
     }
 }
 
+void QOpcUaClientPrivate::connectToEndpointEncrypted(const QUrl &url, const QSslCertificate &pubKey, const QSslKey &priKey)
+{
+    bool result = checkAndSetUrl(url);
+    if (result) {
+        setStateAndError(QOpcUaClient::Connecting);
+        m_impl->connectToEndpointEncrypted(url, pubKey, priKey);
+    } else {
+        setStateAndError(QOpcUaClient::Disconnected, QOpcUaClient::InvalidUrl);
+    }
+}
+
 void QOpcUaClientPrivate::disconnectFromEndpoint()
 {
     if (m_state != QOpcUaClient::Connected) {

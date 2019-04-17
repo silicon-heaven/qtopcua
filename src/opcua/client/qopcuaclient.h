@@ -54,6 +54,8 @@ QT_BEGIN_NAMESPACE
 
 class QOpcUaClientPrivate;
 class QOpcUaClientImpl;
+class QSslCertificate;
+class QSslKey;
 
 class Q_OPCUA_EXPORT QOpcUaClient : public QObject
 {
@@ -84,6 +86,7 @@ public:
     ~QOpcUaClient();
 
     Q_INVOKABLE void connectToEndpoint(const QUrl &url);
+    Q_INVOKABLE void connectToEndpointEncypted(const QUrl &url, const QSslCertificate &pubKey, const QSslKey &priKey);
     Q_INVOKABLE void disconnectFromEndpoint();
     QOpcUaNode *node(const QString &nodeId);
     QOpcUaNode *node(const QOpcUa::QExpandedNodeId &expandedNodeId);
