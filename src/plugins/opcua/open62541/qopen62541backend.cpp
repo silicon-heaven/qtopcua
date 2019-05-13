@@ -63,8 +63,16 @@ Open62541AsyncBackend::Open62541AsyncBackend(QOpen62541Client *parent)
     , m_minPublishingInterval(0)
 {
     m_subscriptionTimer.setSingleShot(true);
+    m_subscriptionTimer.setInterval(250);
     QObject::connect(&m_subscriptionTimer, &QTimer::timeout,
                      this, &Open62541AsyncBackend::sendPublishRequest);
+    QTimer *tm = new QTimer(this);
+    tm->setInterval(5 * 60 * 1000);
+    connect(tm, &QTimer::timeout, [this]() {
+        qDebug() << "renew connection";
+        UA_Client_manuallyRenewSecureChannel(m_uaclient);
+    });
+    tm->start();
 }
 
 Open62541AsyncBackend::~Open62541AsyncBackend()
@@ -956,14 +964,36 @@ void Open62541AsyncBackend::sendPublishRequest()
     }
 
     // If BADSERVERNOTCONNECTED is returned, the subscriptions are gone and local information can be deleted.
-    if (UA_Client_runAsync(m_uaclient, 1) == UA_STATUSCODE_BADSERVERNOTCONNECTED) {
+    UA_StatusCode statusCode = UA_Client_runAsync(m_uaclient, 1);
+    if (statusCode == UA_STATUSCODE_BADSERVERNOTCONNECTED) {
         qCWarning(QT_OPCUA_PLUGINS_OPEN62541) << "Unable to send publish request";
         m_sendPublishRequests = false;
         cleanupSubscriptions();
         return;
     }
+    else if (statusCode != UA_STATUSCODE_GOOD) {
+//    else if (statusCode == UA_STATUSCODE_BADREQUESTHEADERINVALID) {
+//    else if (statusCode == UA_STATUSCODE_BADSECURECHANNELIDINVALID) {
+        qWarning() << "error on connection";
+        m_sendPublishRequests = false;
+        cleanupSubscriptions();
 
-    m_subscriptionTimer.start(0);
+        m_useStateCallback = false;
+
+        if (m_uaclient) {
+            UA_StatusCode ret = UA_Client_disconnect(m_uaclient);
+            if (ret != UA_STATUSCODE_GOOD) {
+                qCWarning(QT_OPCUA_PLUGINS_OPEN62541) << "Open62541: Failed to disconnect";
+                // Fall through intentionally
+            }
+            UA_Client_delete(m_uaclient);
+            m_uaclient = nullptr;
+        }
+
+        emit stateAndOrErrorChanged(QOpcUaClient::Disconnected, QOpcUaClient::ConnectionError);
+    }
+
+    m_subscriptionTimer.start();
 }
 
 void Open62541AsyncBackend::modifyPublishRequests()

@@ -241,7 +241,7 @@ QVariant toQVariant(const UA_Variant &value)
     case UA_TYPES_ARGUMENT:
         return arrayToQVariant<QOpcUa::QArgument, UA_Argument>(value);
     default:
-        qCWarning(QT_OPCUA_PLUGINS_OPEN62541) << "Variant conversion from Open62541 for typeIndex" << value.type->typeIndex << " not implemented";
+        qCWarning(QT_OPCUA_PLUGINS_OPEN62541) << "Variant conversion from Open62541 for typeIndex" << value.type->typeIndex << "typeName" << value.type->typeName << "not implemented";
         return QVariant();
     }
 }
