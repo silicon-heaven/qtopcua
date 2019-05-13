@@ -1,6 +1,6 @@
 /* THIS IS A SINGLE-FILE DISTRIBUTION CONCATENATED FROM THE OPEN62541 SOURCES
  * visit http://open62541.org/ for information about this software
- * Git-Revision: 0.3-rc2-899-ga9a9e2aa
+ * Git-Revision: 0.3-rc2-968-gcc85e504
  */
 
 /*
@@ -32,7 +32,7 @@
 #define UA_OPEN62541_VER_MINOR 4
 #define UA_OPEN62541_VER_PATCH 0
 #define UA_OPEN62541_VER_LABEL "-dev" /* Release candidate label, etc. */
-#define UA_OPEN62541_VER_COMMIT "0.3-rc2-899-ga9a9e2aa"
+#define UA_OPEN62541_VER_COMMIT "0.3-rc2-968-gcc85e504"
 
 /**
  * Feature Options
@@ -66,6 +66,7 @@
 #endif
 
 /* Advanced Options */
+/* #undef UA_ENABLE_CUSTOM_NODESTORE */
 #define UA_ENABLE_STATUSCODE_DESCRIPTIONS
 #define UA_ENABLE_TYPENAMES
 #define UA_ENABLE_NODESET_COMPILER_DESCRIPTIONS
@@ -122,7 +123,7 @@
 
 
 
-/*********************************** amalgamated original file "/home/martin/devel/tools/open62541/arch/ua_architecture_base.h" ***********************************/
+/*********************************** amalgamated original file "/home/martin/devel/tools/open62541/include/open62541/architecture_base.h" ***********************************/
 
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -160,161 +161,6 @@ void UA_free(void* ptr); //de-allocate memory previously allocated with UA_mallo
 #endif
 
 #endif //ARCH_UA_ARCHITECTURE_BASE_H
-
-/*********************************** amalgamated original file "/home/martin/devel/tools/open62541/arch/win32/ua_architecture.h" ***********************************/
-
-/* This work is licensed under a Creative Commons CCZero 1.0 Universal License.
- * See http://creativecommons.org/publicdomain/zero/1.0/ for more information.
- *
- *    Copyright 2016-2017 (c) Julius Pfrommer, Fraunhofer IOSB
- *    Copyright 2017 (c) Stefan Profanter, fortiss GmbH
- */
-
-#ifdef UA_ARCHITECTURE_WIN32
-
-#ifndef PLUGINS_ARCH_WIN32_UA_ARCHITECTURE_H_
-#define PLUGINS_ARCH_WIN32_UA_ARCHITECTURE_H_
-
-
-#ifndef _BSD_SOURCE
-# define _BSD_SOURCE
-#endif
-
-/* Disable some security warnings on MSVC */
-#if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
-# define _CRT_SECURE_NO_WARNINGS
-#endif
-
-/* Assume that Windows versions are newer than Windows XP */
-#if defined(__MINGW32__) && (!defined(WINVER) || WINVER < 0x501)
-# undef WINVER
-# undef _WIN32_WINDOWS
-# undef _WIN32_WINNT
-# define WINVER 0x0600
-# define _WIN32_WINDOWS 0x0600
-# define _WIN32_WINNT 0x0600 //windows vista version, which included InepPton
-#endif
-
-#include <stdlib.h>
-#if defined(_WIN32) && !defined(__clang__)
-# include <malloc.h>
-#endif
-
-#include <stdio.h>
-#include <errno.h>
-#include <winsock2.h>
-#include <windows.h>
-#include <ws2tcpip.h>
-
-#if defined (_MSC_VER) || defined(__clang__)
-# ifndef UNDER_CE
-#  include <io.h> //access
-#  define UA_access _access
-# endif
-#else
-# include <unistd.h> //access and tests
-# define UA_access access
-#endif
-
-#define ssize_t int
-#define OPTVAL_TYPE char
-#ifndef UA_sleep_ms
-# define UA_sleep_ms(X) Sleep(X)
-#endif
-
-// Windows does not support ansi colors
-// #define UA_ENABLE_LOG_COLORS
-
-#define UA_IPV6 1
-
-#if defined(__MINGW32__) && !defined(__clang__) //mingw defines SOCKET as long long unsigned int, giving errors in logging and when comparing with UA_Int32
-# define UA_SOCKET int
-# define UA_INVALID_SOCKET -1
-#else
-# define UA_SOCKET SOCKET
-# define UA_INVALID_SOCKET INVALID_SOCKET
-#endif
-#define UA_ERRNO WSAGetLastError()
-#define UA_INTERRUPTED WSAEINTR
-#define UA_AGAIN WSAEWOULDBLOCK
-#define UA_EAGAIN EAGAIN
-#define UA_WOULDBLOCK WSAEWOULDBLOCK
-#define UA_ERR_CONNECTION_PROGRESS WSAEWOULDBLOCK
-
-#define UA_fd_set(fd, fds) FD_SET((UA_SOCKET)fd, fds)
-#define UA_fd_isset(fd, fds) FD_ISSET((UA_SOCKET)fd, fds)
-
-#ifdef UNDER_CE
-# define errno
-#endif
-
-#define UA_getnameinfo getnameinfo
-#define UA_send(sockfd, buf, len, flags) send(sockfd, buf, (int)(len), flags)
-#define UA_recv(sockfd, buf, len, flags) recv(sockfd, buf, (int)(len), flags)
-#define UA_sendto(sockfd, buf, len, flags, dest_addr, addrlen) sendto(sockfd, (const char*)(buf), (int)(len), flags, dest_addr, (int) (addrlen))
-#define UA_recvfrom(sockfd, buf, len, flags, src_addr, addrlen) recvfrom(sockfd, (char*)(buf), (int)(len), flags, src_addr, addrlen)
-#define UA_htonl htonl
-#define UA_ntohl ntohl
-#define UA_close closesocket
-#define UA_select(nfds, readfds, writefds, exceptfds, timeout) select((int)(nfds), readfds, writefds, exceptfds, timeout)
-#define UA_shutdown shutdown
-#define UA_socket socket
-#define UA_bind bind
-#define UA_listen listen
-#define UA_accept accept
-#define UA_connect(sockfd, addr, addrlen) connect(sockfd, addr, (int)(addrlen))
-#define UA_getaddrinfo getaddrinfo
-#define UA_getsockopt getsockopt
-#define UA_setsockopt(sockfd, level, optname, optval, optlen) setsockopt(sockfd, level, optname, (const char*) (optval), optlen)
-#define UA_freeaddrinfo freeaddrinfo
-#define UA_gethostname gethostname
-#define UA_inet_pton InetPton
-
-#if UA_IPV6
-# include <iphlpapi.h>
-# define UA_if_nametoindex if_nametoindex
-#endif
-
-#ifdef maxStringLength //defined in mingw64
-# undef maxStringLength
-#endif
-
-#ifndef UA_free
-#define UA_free free
-#endif
-#ifndef UA_malloc
-#define UA_malloc malloc
-#endif
-#ifndef UA_calloc
-#define UA_calloc calloc
-#endif
-#ifndef UA_realloc
-#define UA_realloc realloc
-#endif
-
-/* 3rd Argument is the string */
-#define UA_snprintf(source, size, ...) _snprintf_s(source, size, _TRUNCATE, __VA_ARGS__)
-
-#define UA_LOG_SOCKET_ERRNO_WRAP(LOG) { \
-    char *errno_str = NULL; \
-    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, \
-    NULL, WSAGetLastError(), \
-    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), \
-    (LPSTR)&errno_str, 0, NULL); \
-    LOG; \
-    LocalFree(errno_str); \
-}
-#define UA_LOG_SOCKET_ERRNO_GAI_WRAP UA_LOG_SOCKET_ERRNO_WRAP
-
-
-/* Fix redefinition of SLIST_ENTRY on mingw winnt.h */
-#if !defined(_SYS_QUEUE_H_) && defined(SLIST_ENTRY)
-# undef SLIST_ENTRY
-#endif
-
-#endif /* PLUGINS_ARCH_WIN32_UA_ARCHITECTURE_H_ */
-
-#endif /* UA_ARCHITECTURE_WIN32 */
 
 /*********************************** amalgamated original file "/home/martin/devel/tools/open62541/arch/posix/ua_architecture.h" ***********************************/
 
@@ -421,6 +267,7 @@ void UA_free(void* ptr); //de-allocate memory previously allocated with UA_mallo
 #define UA_setsockopt setsockopt
 #define UA_freeaddrinfo freeaddrinfo
 #define UA_gethostname gethostname
+#define UA_getsockname getsockname
 #define UA_inet_pton inet_pton
 #if UA_IPV6
 # define UA_if_nametoindex if_nametoindex
@@ -833,7 +680,7 @@ typedef uint64_t  uintmax_t;
 
 #endif // !defined(_MSC_VER) || _MSC_VER >= 1600 ]
 
-/*********************************** amalgamated original file "/home/martin/devel/tools/open62541/arch/ua_architecture_definitions.h" ***********************************/
+/*********************************** amalgamated original file "/home/martin/devel/tools/open62541/include/open62541/architecture_definitions.h" ***********************************/
 
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12770,6 +12617,28 @@ typedef enum {
 #define UA_VALUERANK_TWO_DIMENSIONS            2
 #define UA_VALUERANK_THREE_DIMENSIONS          3
 
+/**
+ * General Configuration Constants
+ * ===============================
+ *
+ * This section defines constants that are used for the configuration of both
+ * clients and servers.
+ *
+ * Rule Handling
+ * -------------
+ *
+ * The RuleHanding settings define how error cases that result from rules in the
+ * OPC UA specification shall be handled. The rule handling can be softened,
+ * e.g. to workaround misbehaving implementations or to mitigate the impact of
+ * additional rules that are introduced in later versions of the OPC UA
+ * specification. */
+typedef enum {
+    UA_RULEHANDLING_DEFAULT = 0,
+    UA_RULEHANDLING_ABORT,  /* Abort the operation and return an error code */
+    UA_RULEHANDLING_WARN,   /* Print a message in the logs and continue */
+    UA_RULEHANDLING_ACCEPT, /* Continue and disregard the broken rule */
+} UA_RuleHandling;
+
 _UA_END_DECLS
 
 
@@ -12806,7 +12675,7 @@ _UA_BEGIN_DECLS
  * them into higher-order types: arrays, structures and unions. In open62541,
  * only the builtin data types are defined manually. All other data types are
  * generated from standard XML definitions. Their exact definitions can be
- * looked up at https://opcfoundation.org/UA/schemas/Opc.Ua.Types.bsd.xml.
+ * looked up at https://opcfoundation.org/UA/schemas/Opc.Ua.Types.bsd.
  *
  * For users that are new to open62541, take a look at the :ref:`tutorial for
  * working with data types<types-tutorial>` before diving into the
@@ -12927,7 +12796,7 @@ typedef struct {
 } UA_String;
 
 /* Copies the content on the heap. Returns a null-string when alloc fails */
-UA_String UA_EXPORT UA_String_fromChars(char const src[]) UA_FUNC_ATTR_WARN_UNUSED_RESULT;
+UA_String UA_EXPORT UA_String_fromChars(const char *src) UA_FUNC_ATTR_WARN_UNUSED_RESULT;
 
 UA_Boolean UA_EXPORT UA_String_equal(const UA_String *s1, const UA_String *s2);
 
@@ -12939,8 +12808,10 @@ UA_EXPORT extern const UA_String UA_STRING_NULL;
  * of the char-array. */
 static UA_INLINE UA_String
 UA_STRING(char *chars) {
-    UA_String str; str.length = strlen(chars);
-    str.data = (UA_Byte*)chars; return str;
+    UA_String s; s.length = 0; s.data = NULL;
+    if(!chars)
+        return s;
+    s.length = strlen(chars); s.data = (UA_Byte*)chars; return s;
 }
 
 #define UA_STRING_ALLOC(CHARS) UA_String_fromChars(CHARS)
@@ -13047,8 +12918,10 @@ UA_EXPORT extern const UA_ByteString UA_BYTESTRING_NULL;
 
 static UA_INLINE UA_ByteString
 UA_BYTESTRING(char *chars) {
-    UA_ByteString str; str.length = strlen(chars);
-    str.data = (UA_Byte*)chars; return str;
+    UA_ByteString bs; bs.length = 0; bs.data = NULL;
+    if(!chars)
+        return bs;
+    bs.length = strlen(chars); bs.data = (UA_Byte*)chars; return bs;
 }
 
 static UA_INLINE UA_ByteString
@@ -22165,8 +22038,12 @@ struct UA_Client;
  * Server Lifecycle
  * ---------------- */
 
-UA_Server UA_EXPORT * UA_Server_new(const UA_ServerConfig *config);
+UA_Server UA_EXPORT * UA_Server_new(void);
+
 void UA_EXPORT UA_Server_delete(UA_Server *server);
+
+UA_ServerConfig UA_EXPORT *
+UA_Server_getConfig(UA_Server *server);
 
 /* Runs the main loop of the server. In each iteration, this calls into the
  * networklayers to see if messages have arrived.
@@ -23405,9 +23282,6 @@ UA_Server_updateCertificate(UA_Server *server,
  * ----------------- */
 /* Add a new namespace to the server. Returns the index of the new namespace */
 UA_UInt16 UA_EXPORT UA_Server_addNamespace(UA_Server *server, const char* name);
-
-UA_ServerConfig*
-UA_Server_getConfig(UA_Server *server);
 
 /* Get namespace by name from the server. */
 UA_StatusCode UA_EXPORT
@@ -25229,7 +25103,8 @@ typedef struct {
 
 /**
  * Nodestore Plugin API
- * --------------------
+ * ====================
+ *
  * The following definitions are used for implementing custom node storage
  * backends. **Most users will want to use the default nodestore and don't need
  * to work with the nodestore API**.
@@ -25238,62 +25113,73 @@ typedef struct {
  * nodes. Please use the OPC UA services for that. Otherwise, all consistency
  * checks are omitted. This can crash the application eventually. */
 
-typedef void (*UA_NodestoreVisitor)(void *visitorContext, const UA_Node *node);
+/* For non-multithreaded access, some nodestores allow that nodes are edited
+ * without a copy/replace. This is not possible when the node is only an
+ * intermediate representation and stored e.g. in a database backend. */
+extern const UA_Boolean inPlaceEditAllowed;
 
-typedef struct {
-    /* Nodestore context and lifecycle */
-    void *context;
-    void (*deleteNodestore)(void *nodestoreContext);
-
-    /* For non-multithreaded access, some nodestores allow that nodes are edited
-     * without a copy/replace. This is not possible when the node is only an
-     * intermediate representation and stored e.g. in a database backend. */
-    UA_Boolean inPlaceEditAllowed;
-
-    /* The following definitions are used to create empty nodes of the different
-     * node types. The memory is managed by the nodestore. Therefore, the node
-     * has to be removed via a special deleteNode function. (If the new node is
-     * not added to the nodestore.) */
-    UA_Node * (*newNode)(void *nodestoreContext, UA_NodeClass nodeClass);
-
-    void (*deleteNode)(void *nodestoreContext, UA_Node *node);
-
-    /* ``Get`` returns a pointer to an immutable node. ``Release`` indicates
-     * that the pointer is no longer accessed afterwards. */
-
-    const UA_Node * (*getNode)(void *nodestoreContext, const UA_NodeId *nodeId);
-
-    void (*releaseNode)(void *nodestoreContext, const UA_Node *node);
-
-    /* Returns an editable copy of a node (needs to be deleted with the
-     * deleteNode function or inserted / replaced into the nodestore). */
-    UA_StatusCode (*getNodeCopy)(void *nodestoreContext, const UA_NodeId *nodeId,
-                                 UA_Node **outNode);
-
-    /* Inserts a new node into the nodestore. If the NodeId is zero, then a
-     * fresh numeric NodeId is assigned. If insertion fails, the node is
-     * deleted. */
-    UA_StatusCode (*insertNode)(void *nodestoreContext, UA_Node *node,
-                                UA_NodeId *addedNodeId);
-
-    /* To replace a node, get an editable copy of the node, edit and replace
-     * with this function. If the node was already replaced since the copy was
-     * made, UA_STATUSCODE_BADINTERNALERROR is returned. If the NodeId is not
-     * found, UA_STATUSCODE_BADNODEIDUNKNOWN is returned. In both error cases,
-     * the editable node is deleted. */
-    UA_StatusCode (*replaceNode)(void *nodestoreContext, UA_Node *node);
-
-    /* Removes a node from the nodestore. */
-    UA_StatusCode (*removeNode)(void *nodestoreContext, const UA_NodeId *nodeId);
-
-    /* Execute a callback for every node in the nodestore. */
-    void (*iterate)(void *nodestoreContext, void* visitorContext,
-                    UA_NodestoreVisitor visitor);
-} UA_Nodestore;
+/* Nodestore context and lifecycle */
+UA_StatusCode UA_Nodestore_new(void **nsCtx);
+void UA_Nodestore_delete(void *nsCtx);
 
 /**
- * The following methods specialize internally for the different node classes
- * (distinguished by the nodeClass member) */
+ * The following definitions are used to create empty nodes of the different
+ * node types. The memory is managed by the nodestore. Therefore, the node has
+ * to be removed via a special deleteNode function. (If the new node is not
+ * added to the nodestore.) */
+
+UA_Node *
+UA_Nodestore_newNode(void *nsCtx, UA_NodeClass nodeClass);
+
+void
+UA_Nodestore_deleteNode(void *nsCtx, UA_Node *node);
+
+/**
+ *``Get`` returns a pointer to an immutable node. ``Release`` indicates that the
+ * pointer is no longer accessed afterwards. */
+
+const UA_Node *
+UA_Nodestore_getNode(void *nsCtx, const UA_NodeId *nodeId);
+
+void
+UA_Nodestore_releaseNode(void *nsCtx, const UA_Node *node);
+
+/* Returns an editable copy of a node (needs to be deleted with the
+ * deleteNode function or inserted / replaced into the nodestore). */
+UA_StatusCode
+UA_Nodestore_getNodeCopy(void *nsCtx, const UA_NodeId *nodeId,
+                         UA_Node **outNode);
+
+/* Inserts a new node into the nodestore. If the NodeId is zero, then a fresh
+ * numeric NodeId is assigned. If insertion fails, the node is deleted. */
+UA_StatusCode
+UA_Nodestore_insertNode(void *nsCtx, UA_Node *node, UA_NodeId *addedNodeId);
+
+/* To replace a node, get an editable copy of the node, edit and replace with
+ * this function. If the node was already replaced since the copy was made,
+ * UA_STATUSCODE_BADINTERNALERROR is returned. If the NodeId is not found,
+ * UA_STATUSCODE_BADNODEIDUNKNOWN is returned. In both error cases, the editable
+ * node is deleted. */
+UA_StatusCode
+UA_Nodestore_replaceNode(void *nsCtx, UA_Node *node);
+
+/* Removes a node from the nodestore. */
+UA_StatusCode
+UA_Nodestore_removeNode(void *nsCtx, const UA_NodeId *nodeId);
+
+/* Execute a callback for every node in the nodestore. */
+typedef void (*UA_NodestoreVisitor)(void *visitorCtx, const UA_Node *node);
+void
+UA_Nodestore_iterate(void *nsCtx, UA_NodestoreVisitor visitor,
+                     void *visitorCtx);
+
+/**
+ * Node Handling
+ * =============
+ *
+ * To be used only in the nodestore and internally in the SDK. The following
+ * methods specialize internally for the different node classes, distinguished
+ * by the NodeClass attribute. */
 
 /* Attributes must be of a matching type (VariableAttributes, ObjectAttributes,
  * and so on). The attributes are copied. Note that the attributes structs do
@@ -25385,6 +25271,28 @@ typedef struct {
     UA_Duration max;
 } UA_DurationRange;
 
+#ifdef UA_ENABLE_DISCOVERY
+typedef struct {
+
+	/* Timeout in seconds when to automatically remove a registered server from
+	 * the list, if it doesn't re-register within the given time frame. A value
+	 * of 0 disables automatic removal. Default is 60 Minutes (60*60). Must be
+	 * bigger than 10 seconds, because cleanup is only triggered approximately
+	 * every 10 seconds. The server will still be removed depending on the
+	 * state of the semaphore file. */
+	UA_UInt32 cleanupTimeout;
+
+	/* Enable mDNS announce and response to queries */
+	bool mdnsEnable;
+
+#ifdef UA_ENABLE_DISCOVERY_MULTICAST
+	UA_MdnsDiscoveryConfiguration mdns;
+#endif
+
+} UA_ServerConfig_Discovery;
+
+#endif
+
 struct UA_ServerConfig {
     UA_UInt16 nThreads; /* only if multithreading is enabled */
     UA_Logger logger;
@@ -25394,12 +25302,9 @@ struct UA_ServerConfig {
     UA_ApplicationDescription applicationDescription;
     UA_ByteString serverCertificate;
 
-    /* MDNS Discovery */
-#ifdef UA_ENABLE_DISCOVERY
-    UA_String mdnsServerName;
-    size_t serverCapabilitiesSize;
-    UA_String *serverCapabilities;
-#endif
+    /* Rule Handling */
+    UA_RuleHandling verifyRequestTimestamp; /* Verify that the server sends a
+                                             * timestamp in the request header */
 
     /* Custom DataTypes. Attention! Custom datatypes are not cleaned up together
      * with the configuration. So it is possible to allocate them on ROM. */
@@ -25409,9 +25314,6 @@ struct UA_ServerConfig {
      * .. note:: See the section on :ref:`generic-types`. Examples for working
      *    with custom data types are provided in
      *    ``/examples/custom_datatype/``. */
-
-    /* Nodestore */
-    UA_Nodestore nodestore;
 
     /* Networking */
     size_t networkLayersSize;
@@ -25497,13 +25399,7 @@ struct UA_ServerConfig {
 
     /* Discovery */
 #ifdef UA_ENABLE_DISCOVERY
-    /* Timeout in seconds when to automatically remove a registered server from
-     * the list, if it doesn't re-register within the given time frame. A value
-     * of 0 disables automatic removal. Default is 60 Minutes (60*60). Must be
-     * bigger than 10 seconds, because cleanup is only triggered approximately
-     * ervery 10 seconds. The server will still be removed depending on the
-     * state of the semaphore file. */
-    UA_UInt32 discoveryCleanupTimeout;
+	UA_ServerConfig_Discovery discovery;
 #endif
 
 #ifdef UA_ENABLE_SUBSCRIPTIONS
@@ -25549,6 +25445,14 @@ struct UA_ServerConfig {
     UA_Boolean deleteAtTimeDataCapability;
 #endif
 };
+
+void UA_EXPORT
+UA_ServerConfig_clean(UA_ServerConfig *config);
+
+/* Set a custom hostname in server configuration */
+UA_EXPORT void
+UA_ServerConfig_setCustomHostname(UA_ServerConfig *config,
+                                  const UA_String customHostname);
 
 _UA_END_DECLS
 
@@ -27884,27 +27788,6 @@ UA_Log_Stdout_clear(void *logContext);
 _UA_END_DECLS
 
 
-/*********************************** amalgamated original file "/home/martin/devel/tools/open62541/plugins/include/open62541/plugin/nodestore_default.h" ***********************************/
-
-/* This work is licensed under a Creative Commons CCZero 1.0 Universal License.
- * See http://creativecommons.org/publicdomain/zero/1.0/ for more information.
- *
- *    Copyright 2014-2017 (c) Fraunhofer IOSB (Author: Julius Pfrommer)
- *    Copyright 2017 (c) Julian Grothoff
- *    Copyright 2017 (c) Stefan Profanter, fortiss GmbH
- */
-
-
-
-_UA_BEGIN_DECLS
-
-/* Initializes the nodestore, sets the context and function pointers */
-UA_StatusCode UA_EXPORT
-UA_Nodestore_default_new(UA_Nodestore *ns);
-
-_UA_END_DECLS
-
-
 /*********************************** amalgamated original file "/home/martin/devel/tools/open62541/plugins/include/open62541/server_config_default.h" ***********************************/
 
 /* This work is licensed under a Creative Commons CCZero 1.0 Universal License.
@@ -27923,7 +27806,8 @@ _UA_BEGIN_DECLS
 /* Default Connection */
 /**********************/
 
-extern const UA_EXPORT UA_ConnectionConfig UA_ConnectionConfig_default;
+extern const UA_EXPORT
+UA_ConnectionConfig UA_ConnectionConfig_default;
 
 /*************************/
 /* Default Server Config */
@@ -27943,74 +27827,45 @@ extern const UA_EXPORT UA_ConnectionConfig UA_ConnectionConfig_default;
  * @param recvBufferSize The size in bytes for the network receive buffer
  *
  */
-UA_EXPORT UA_ServerConfig *
-UA_ServerConfig_new_customBuffer(UA_UInt16 portNumber, const UA_ByteString *certificate,
-                                 UA_UInt32 sendBufferSize, UA_UInt32 recvBufferSize);
+UA_EXPORT UA_StatusCode
+UA_ServerConfig_setMinimalCustomBuffer(UA_ServerConfig *config,
+                                       UA_UInt16 portNumber,
+                                       const UA_ByteString *certificate,
+                                       UA_UInt32 sendBufferSize,
+                                       UA_UInt32 recvBufferSize);
 
 /* Creates a new server config with one endpoint.
  *
  * The config will set the tcp network layer to the given port and adds a single
  * endpoint with the security policy ``SecurityPolicy#None`` to the server. A
- * server certificate may be supplied but is optional.
- *
- * @param portNumber The port number for the tcp network layer
- * @param certificate Optional certificate for the server endpoint. Can be
- *        ``NULL``. */
-static UA_INLINE UA_ServerConfig *
-UA_ServerConfig_new_minimal(UA_UInt16 portNumber, const UA_ByteString *certificate) {
-    return UA_ServerConfig_new_customBuffer(portNumber, certificate, 0 ,0);
+ * server certificate may be supplied but is optional. */
+static UA_INLINE UA_StatusCode
+UA_ServerConfig_setMinimal(UA_ServerConfig *config, UA_UInt16 portNumber,
+                           const UA_ByteString *certificate) {
+    return UA_ServerConfig_setMinimalCustomBuffer(config, portNumber,
+                                                  certificate, 0, 0);
 }
 
 #ifdef UA_ENABLE_ENCRYPTION
 
-UA_EXPORT UA_ServerConfig *
-UA_ServerConfig_new_basic128rsa15(UA_UInt16 portNumber,
-                                  const UA_ByteString *certificate,
-                                  const UA_ByteString *privateKey,
-                                  const UA_ByteString *trustList,
-                                  size_t trustListSize,
-                                  const UA_ByteString *revocationList,
-                                  size_t revocationListSize);
-
-UA_EXPORT UA_ServerConfig *
-UA_ServerConfig_new_basic256sha256(UA_UInt16 portNumber,
-                                   const UA_ByteString *certificate,
-                                   const UA_ByteString *privateKey,
-                                   const UA_ByteString *trustList,
-                                   size_t trustListSize,
-                                   const UA_ByteString *revocationList,
-                                   size_t revocationListSize);
-
-UA_EXPORT UA_ServerConfig *
-UA_ServerConfig_new_allSecurityPolicies(UA_UInt16 portNumber,
-                                        const UA_ByteString *certificate,
-                                        const UA_ByteString *privateKey,
-                                        const UA_ByteString *trustList,
-                                        size_t trustListSize,
-                                        const UA_ByteString *revocationList,
-                                        size_t revocationListSize);
+UA_EXPORT UA_StatusCode
+UA_ServerConfig_setDefaultWithSecurityPolicies(UA_ServerConfig *conf,
+                                               UA_UInt16 portNumber,
+                                               const UA_ByteString *certificate,
+                                               const UA_ByteString *privateKey,
+                                               const UA_ByteString *trustList,
+                                               size_t trustListSize,
+                                               const UA_ByteString *revocationList,
+                                               size_t revocationListSize);
 
 #endif
 
 /* Creates a server config on the default port 4840 with no server
  * certificate. */
-static UA_INLINE UA_ServerConfig *
-UA_ServerConfig_new_default(void) {
-    return UA_ServerConfig_new_minimal(4840, NULL);
+static UA_INLINE UA_StatusCode
+UA_ServerConfig_setDefault(UA_ServerConfig *config) {
+    return UA_ServerConfig_setMinimal(config, 4840, NULL);
 }
-
-/* Set a custom hostname in server configuration
- *
- * @param config A valid server configuration
- * @param customHostname The custom hostname used by the server */
-
-UA_EXPORT void
-UA_ServerConfig_set_customHostname(UA_ServerConfig *config,
-                                   const UA_String customHostname);
-
-/* Frees allocated memory in the server config */
-UA_EXPORT void
-UA_ServerConfig_delete(UA_ServerConfig *config);
 
 _UA_END_DECLS
 
@@ -28152,7 +28007,7 @@ _UA_END_DECLS
 #endif
 
 
-/*********************************** amalgamated original file "/home/martin/devel/tools/open62541/arch/ua_network_tcp.h" ***********************************/
+/*********************************** amalgamated original file "/home/martin/devel/tools/open62541/include/open62541/network_tcp.h" ***********************************/
 
 /* This work is licensed under a Creative Commons CCZero 1.0 Universal License.
  * See http://creativecommons.org/publicdomain/zero/1.0/ for more information. 
@@ -28181,7 +28036,7 @@ UA_ClientConnectionTCP_init(UA_ConnectionConfig config, const UA_String endpoint
 _UA_END_DECLS
 
 
-/*********************************** amalgamated original file "/home/martin/devel/tools/open62541/arch/ua_architecture_functions.h" ***********************************/
+/*********************************** amalgamated original file "/home/martin/devel/tools/open62541/include/open62541/architecture_functions.h" ***********************************/
 
 /* This work is licensed under a Creative Commons CCZero 1.0 Universal License.
  * See http://creativecommons.org/publicdomain/zero/1.0/ for more information.
@@ -28352,7 +28207,11 @@ void UA_freeaddrinfo(struct addrinfo *res);//equivalent to posix freeaddrinfo im
 #endif
 
 #ifndef UA_gethostname
-int UA_gethostname(char *name, size_t len);//equivalent to posix gethostname implementatio
+int UA_gethostname(char *name, size_t len);//equivalent to posix gethostname implementation
+#endif
+
+#ifndef UA_getsockname
+int UA_getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen);//equivalent to posix getsockname implementation
 #endif
 
 #ifndef UA_initialize_architecture_network
