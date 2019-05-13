@@ -57,6 +57,9 @@ QOpen62541Client::QOpen62541Client()
     : QOpcUaClientImpl()
     , m_backend(new Open62541AsyncBackend(this))
 {
+    qRegisterMetaType<QSslCertificate>("QSslCertificate");
+    qRegisterMetaType<QSslKey>("QSslKey");
+
     m_thread = new QThread();
     connectBackendWithClient(m_backend);
     m_backend->moveToThread(m_thread);
@@ -78,8 +81,6 @@ void QOpen62541Client::connectToEndpoint(const QUrl &url)
 
 void QOpen62541Client::connectToEndpointEncrypted(const QUrl &url, const QSslCertificate &pubKey, const QSslKey &priKey)
 {
-    qRegisterMetaType<QSslCertificate>("QSslCertificate");
-    qRegisterMetaType<QSslKey>("QSslKey");
     QMetaObject::invokeMethod(m_backend, "connectToEndpointEncrypted", Qt::QueuedConnection, Q_ARG(QUrl, url),
                               Q_ARG(QSslCertificate, pubKey), Q_ARG(QSslKey, priKey));
 }

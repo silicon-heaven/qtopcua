@@ -853,7 +853,7 @@ void Open62541AsyncBackend::connectToEndpointEncrypted(const QUrl &url, const QS
         QString applicationURI;
         for (const QSslCertificateExtension &e : pubKey.extensions()) {
             if (e.name() == "subjectAltName") {
-                applicationURI = e.value().toMap()["URI"].toString();
+                applicationURI = e.value().toMap().value("URI").toString();
             }
         }
 
